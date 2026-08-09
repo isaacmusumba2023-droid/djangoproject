@@ -1,0 +1,429 @@
+
+<!--THIS IS THE generators_content.html-->
+<h3 id="main-title">{{ title }}</h3>
+<p id="main-text">{{ content }}</p>
+
+<!-- 2. REGISTER BUTTON HEADER -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px 0;">
+    <h4 style="margin: 0;">Asset Register Log</h4>
+    <button class="btn-submit" onclick="openAddModal()" style="margin: 0;">+ Register Generator Asset</button>
+</div>
+
+
+<!-- 3. TABULATED RESULTS TABLE -->
+<div class="table-responsive">
+    <table class="data-table" id="assetTable">
+        <!-- Action & Search Toolbar -->
+        <div class="toolbar-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px;">
+            <!-- Live Search Input -->
+            <div class="search-box" style="flex: 1; max-width: 320px;">
+                <input type="text" id="gCodeSearch" onkeyup="filterTableByGCode()" placeholder="Search G-Code, Model, or Serial..."
+                       style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8125rem;">
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="export-buttons" style="display: flex; gap: 8px;">
+                <button onclick="exportToExcel()" class="btn-export-excel"
+                        style="background-color: #10b981; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.8125rem; cursor: pointer; font-weight: 500;">
+                    📊 Export Excel
+                </button>
+                <button onclick="exportToPDF()" class="btn-export-pdf"
+                        style="background-color: #ef4444; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.8125rem; cursor: pointer; font-weight: 500;">
+                    📄 Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Ensure your table has id="assetTable" -->
+
+
+        <thead>
+            <tr>
+                <th>Actions</th>
+                <th>G-Code</th>
+                <th>Serial No.</th>
+                <th>Model</th>
+                <th>Type</th>
+                <th>kVA</th>
+                <th>Running Hrs</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Field</th>
+                <th>User</th>
+                <th>Purpose</th>
+                <th>Technician</th>
+                <th>Supervisor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset in assets %}
+            <tr>
+                <td>
+                    <button class="btn-edit"
+                        data-id="{{ asset.id }}"
+                        data-g_code="{{ asset.g_code }}"
+                        data-serial_number="{{ asset.serial_number }}"
+                        data-model="{{ asset.model }}"
+                        data-type="{{ asset.type }}"
+                        data-running_hrs="{{ asset.running_hrs }}"
+                        data-kva="{{ asset.kva }}"
+                        data-year_of_manufacture="{{ asset.year_of_manufacture }}"
+                        data-service_yr_in_koc="{{ asset.service_yr_in_koc }}"
+                        data-from_location="{{ asset.from_location }}"
+                        data-to_location="{{ asset.to_location }}"
+                        data-field="{{ asset.field }}"
+                        data-user="{{ asset.user }}"
+                        data-movement_date="{{ asset.movement_date }}"
+                        data-purpose="{{ asset.purpose }}"
+                        data-service_technician="{{ asset.service_technician }}"
+                        data-supervisor="{{ asset.supervisor }}"
+                        data-reason_comment="{{ asset.reason_comment }}"
+                        onclick="openEditModal(this)">Edit</button>
+
+                    <form class="ajax-asset-form" method="POST" action="{% url 'generators' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="asset_id" value="{{ asset.id }}">
+                        <input type="hidden" name="delete_asset" value="1">
+                        <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete asset {{ asset.g_code }}?')">Delete</button>
+                    </form>
+                </td>
+                <td><strong>{{ asset.g_code }}</strong></td>
+                <td>{{ asset.serial_number }}</td>
+                <td>{{ asset.model }}</td>
+                <td>{{ asset.type }}</td>
+                <td>{{ asset.kva }}</td>
+                <td>{{ asset.running_hrs }}</td>
+                <td>{{ asset.from_location }}</td>
+                <td>{{ asset.to_location }}</td>
+                <td>{{ asset.field }}</td>
+                <td>{{ asset.user }}</td>
+                <td>{{ asset.purpose }}</td>
+                <td>{{ asset.service_technician }}</td>
+                <td>{{ asset.supervisor }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="14" style="text-align: center;">No generator records found in Supabase. Click "+ Register Generator Asset" to add one.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 4. ADD / REGISTER ASSET MODAL -->
+<div id="addModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <h3>Register New Generator Asset</h3>
+       <form method="POST" action="{% url 'generators' %}">
+            {% csrf_token %}
+            <input type="hidden" name="add_asset" value="1">
+
+            <div class="form-grid">
+                <!-- G-Code -->
+                <div class="form-group">
+                    <label for="add_g_code">G-Code</label>
+                    <input type="text" id="add_g_code" name="g_code" class="form-control" required>
+                </div>
+
+                <!-- Serial Number -->
+                <div class="form-group">
+                    <label for="add_serial_number">Serial No.</label>
+                    <input type="text" id="add_serial_number" name="serial_number" class="form-control" required>
+                </div>
+
+                <!-- Model (Dropdown) -->
+                <div class="form-group">
+                    <label for="add_model">Model</label>
+                    <select id="add_model" name="model" class="form-control" required>
+                        <option value="" disabled selected>Select Model</option>
+                        {% for model in models %}
+                            <option value="{{ model }}">{{ model }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Type (Dropdown) -->
+                <div class="form-group">
+                    <label for="add_type">Type</label>
+                    <select id="add_type" name="type" class="form-control">
+                        <option value="" disabled selected>Select Type</option>
+                        {% for type in types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Running Hours -->
+                <div class="form-group">
+                    <label for="add_running_hrs">Running Hrs</label>
+                    <input type="number" step="0.1" id="add_running_hrs" name="running_hrs" class="form-control">
+                </div>
+
+                <!-- kVA -->
+                <div class="form-group">
+                    <label for="add_kva">kVA</label>
+                    <input type="number" step="0.1" id="add_kva" name="kva" class="form-control">
+                </div>
+
+                <!-- Mfg Year -->
+                <div class="form-group">
+                    <label for="add_year_of_manufacture">Mfg Year</label>
+                    <input type="number" id="add_year_of_manufacture" name="year_of_manufacture" class="form-control">
+                </div>
+
+                <!-- Service Year in KOC -->
+                <div class="form-group">
+                    <label for="add_service_yr_in_koc">Service Yr in KOC</label>
+                    <input type="number" id="add_service_yr_in_koc" name="service_yr_in_koc" class="form-control">
+                </div>
+
+                <!-- From Location -->
+                <div class="form-group">
+                    <label for="add_from_location">From Location</label>
+                    <input type="text" id="add_from_location" name="from_location" class="form-control">
+                </div>
+
+                <!-- To Location -->
+                <div class="form-group">
+                    <label for="add_to_location">To Location</label>
+                    <input type="text" id="add_to_location" name="to_location" class="form-control">
+                </div>
+
+                <!-- Field (Dropdown) -->
+                <div class="form-group">
+                    <label for="add_field">Field</label>
+                    <select id="add_field" name="field" class="form-control">
+                        <option value="" disabled selected>Select Field</option>
+                        {% for field in fields %}
+                            <option value="{{ field }}">{{ field }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- User (Dropdown) -->
+                <div class="form-group">
+                    <label for="add_user">User</label>
+                    <select id="add_user" name="user" class="form-control">
+                        <option value="" disabled selected>Select User</option>
+                        {% for u in users %}
+                            <option value="{{ u }}">{{ u }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Movement Date -->
+                <div class="form-group">
+                    <label for="add_movement_date">Movement Date</label>
+                    <input type="date" id="add_movement_date" name="movement_date" class="form-control">
+                </div>
+
+                <!-- Purpose (Dropdown) -->
+                <div class="form-group">
+                    <label for="add_purpose">Purpose</label>
+                    <select id="add_purpose" name="purpose" class="form-control">
+                        <option value="" disabled selected>Select Purpose</option>
+                        <option value="REPLACEMENT">REPLACEMENT</option>
+                        <option value="NEW ASSET">NEW ASSET</option>
+                        <option value="OFF-HIRE">OFF-HIRE</option>
+                        <option value="RENTAL">RENTAL</option>
+                        <option value="DISPATCH">DISPATCH</option>
+                        <option value="RECEIVED">RECEIVED</option>
+                    </select>
+                </div>
+
+                <!-- Technician (Dropdown) -->
+                <div class="form-group">
+                    <label for="add_service_technician">Technician</label>
+                    <select id="add_service_technician" name="service_technician" class="form-control">
+                        <option value="" disabled selected>Select Technician</option>
+                        {% for tech in technicians %}
+                            <option value="{{ tech }}">{{ tech }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Supervisor (Dropdown) -->
+                <div class="form-group">
+                    <label for="add_supervisor">Supervisor</label>
+                    <select id="add_supervisor" name="supervisor" class="form-control">
+                        <option value="" disabled selected>Select Supervisor</option>
+                        {% for supervisor in supervisors %}
+                            <option value="{{ supervisor }}">{{ supervisor }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Reason / Comments -->
+            <div class="form-group" style="margin-top: 8px;">
+                <label for="add_reason_comment">Reason / Comments</label>
+                <textarea id="add_reason_comment" name="reason_comment" class="form-control" rows="2"></textarea>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div style="margin-top: 15px;">
+                <button type="submit" class="btn-submit">Save to Supabase</button>
+                <button type="button" class="btn-delete" onclick="closeAddModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 5. EDIT ASSET MODAL -->
+<div id="editModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <h3>Update Generator Asset</h3>
+        <form class="ajax-asset-form" method="POST" action="{% url 'generators' %}">
+            {% csrf_token %}
+            <input type="hidden" name="update_asset" value="1">
+            <input type="hidden" id="edit_asset_id" name="asset_id">
+
+            <div class="form-grid">
+                <!-- G-Code -->
+                <div class="form-group">
+                    <label for="edit_g_code">G-Code</label>
+                    <input type="text" id="edit_g_code" name="g_code" class="form-control" required>
+                </div>
+
+                <!-- Serial Number -->
+                <div class="form-group">
+                    <label for="edit_serial_number">Serial No.</label>
+                    <input type="text" id="edit_serial_number" name="serial_number" class="form-control" required>
+                </div>
+
+                <!-- Model (Dropdown) -->
+                <div class="form-group">
+                    <label for="edit_model">Model</label>
+                    <select id="edit_model" name="model" class="form-control" required>
+                        <option value="">-- None --</option>
+                        {% for model in models %}
+                            <option value="{{ model }}">{{ model }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Type (Dropdown) -->
+                <div class="form-group">
+                    <label for="edit_type">Type</label>
+                    <select id="edit_type" name="type" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for type in types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Running Hours -->
+                <div class="form-group">
+                    <label for="edit_running_hrs">Running Hrs</label>
+                    <input type="number" step="0.1" id="edit_running_hrs" name="running_hrs" class="form-control">
+                </div>
+
+                <!-- kVA -->
+                <div class="form-group">
+                    <label for="edit_kva">kVA</label>
+                    <input type="number" step="0.1" id="edit_kva" name="kva" class="form-control">
+                </div>
+
+                <!-- Mfg Year -->
+                <div class="form-group">
+                    <label for="edit_year_of_manufacture">Mfg Year</label>
+                    <input type="number" id="edit_year_of_manufacture" name="year_of_manufacture" class="form-control">
+                </div>
+
+                <!-- Service Year in KOC -->
+                <div class="form-group">
+                    <label for="edit_service_yr_in_koc">Service Yr in KOC</label>
+                    <input type="number" id="edit_service_yr_in_koc" name="service_yr_in_koc" class="form-control">
+                </div>
+
+                <!-- From Location -->
+                <div class="form-group">
+                    <label for="edit_from_location">From Location</label>
+                    <input type="text" id="edit_from_location" name="from_location" class="form-control">
+                </div>
+
+                <!-- To Location -->
+                <div class="form-group">
+                    <label for="edit_to_location">To Location</label>
+                    <input type="text" id="edit_to_location" name="to_location" class="form-control">
+                </div>
+
+                <!-- Field (Dropdown) -->
+                <div class="form-group">
+                    <label for="edit_field">Field</label>
+                    <select id="edit_field" name="field" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for field in fields %}
+                            <option value="{{ field }}">{{ field }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- User (Dropdown) -->
+                <div class="form-group">
+                    <label for="edit_user">User</label>
+                    <select id="edit_user" name="user" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for u in users %}
+                            <option value="{{ u }}">{{ u }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Movement Date -->
+                <div class="form-group">
+                    <label for="edit_movement_date">Movement Date</label>
+                    <input type="date" id="edit_movement_date" name="movement_date" class="form-control">
+                </div>
+
+                <!-- Purpose (Dropdown) -->
+                <div class="form-group">
+                    <label for="edit_purpose">Purpose</label>
+                    <select id="edit_purpose" name="purpose" class="form-control">
+                        <option value="REPLACEMENT">REPLACEMENT</option>
+                        <option value="NEW ASSET">NEW ASSET</option>
+                        <option value="OFF-HIRE">OFF-HIRE</option>
+                        <option value="RENTAL">RENTAL</option>
+                        <option value="DISPATCH">DISPATCH</option>
+                        <option value="RECEIVED">RECEIVED</option>
+                    </select>
+                </div>
+
+                <!-- Technician (Dropdown) -->
+                <div class="form-group">
+                    <label for="edit_service_technician">Technician</label>
+                    <select id="edit_service_technician" name="service_technician" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for tech in technicians %}
+                            <option value="{{ tech }}">{{ tech }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Supervisor (Dropdown) -->
+                <div class="form-group">
+                    <label for="edit_supervisor">Supervisor</label>
+                    <select id="edit_supervisor" name="supervisor" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for supervisor in supervisors %}
+                            <option value="{{ supervisor }}">{{ supervisor }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Reason / Comments -->
+            <div class="form-group" style="margin-top: 8px;">
+                <label for="edit_reason_comment">Reason / Comments</label>
+                <textarea id="edit_reason_comment" name="reason_comment" class="form-control" rows="2"></textarea>
+            </div>
+
+            <!-- Buttons -->
+            <div style="margin-top: 15px;">
+                <button type="submit" class="btn-submit">Update Record</button>
+                <button type="button" class="btn-delete" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

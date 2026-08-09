@@ -1,0 +1,330 @@
+<!-- Summary KPI Cards -->
+<div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:20px;">
+    <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #0284c7; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <small style="color:#64748b; font-weight:bold;">TOTAL WORK ORDERS</small>
+        <h2 style="margin:5px 0 0; color:#0284c7;">{{ total_records }}</h2>
+    </div>
+    <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #16a34a; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <small style="color:#64748b; font-weight:bold;">FULLY MATCHED</small>
+        <h2 style="margin:5px 0 0; color:#16a34a;">{{ matched_count }}</h2>
+    </div>
+    <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #eab308; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <small style="color:#64748b; font-weight:bold;">PENDING PAPER SLIP</small>
+        <h2 style="margin:5px 0 0; color:#ca8a04;">{{ pending_count }}</h2>
+    </div>
+    <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #dc2626; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <small style="color:#64748b; font-weight:bold;">DISCREPANCIES</small>
+        <h2 style="margin:5px 0 0; color:#dc2626;">{{ discrepancy_count }}</h2>
+    </div>
+</div>
+
+<!-- Controls Header with Search and Export Buttons -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:10px; flex-wrap:wrap;">
+    <h2 style="margin:0; font-size:1.1rem;">Work Orders & Service Book Matching</h2>
+
+    <div style="display:flex; gap:10px; align-items:center;">
+        <input type="text" id="woSearchInput" onkeyup="filterWorkOrdersTable()" placeholder="Search CRM WO, Tech, Site..." style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:4px; width:220px; font-size:0.85rem;">
+        <button type="button" onclick="exportWorkOrdersExcel()" style="background:#16a34a; color:#fff; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.8rem;">📥 Excel</button>
+        <button type="button" onclick="exportWorkOrdersPDF()" style="background:#dc2626; color:#fff; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.8rem;">📄 PDF</button>
+        <button type="button" onclick="openAddWoModal()" style="background:#2d4b7a; color:#fff; padding:6px 14px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.8rem;">+ New Record</button>
+    </div>
+</div>
+
+<!-- Table with fully independent columns and dedicated action buttons -->
+<div style="overflow-x:auto; background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+    <table id="workOrderTable" style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">
+        <thead>
+            <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1; color:#334155;">
+                <th style="padding:10px;">CRM WO #</th>
+                <th style="padding:10px;">Book Serial #</th>
+                <th style="padding:10px;">Customer / Site</th>
+                <th style="padding:10px;">Asset ID</th>
+                <th style="padding:10px;">Service Type</th>
+                <th style="padding:10px;">Technician</th>
+                <th style="padding:10px;">Status</th>
+                <th style="padding:10px; text-align:center;">Edit</th>
+                <th style="padding:10px; text-align:center;">Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in reconciliations %}
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:10px;"><strong>{{ item.crm_wo_number }}</strong></td>
+                <td style="padding:10px;">
+                    {% if item.service_book_serial_no %}
+                        <span style="font-family:monospace; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:bold;">{{ item.service_book_serial_no }}</span>
+                    {% else %}
+                        <span style="color:#94a3b8;">Not Logged</span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px;">{{ item.customer_or_site }}</td>
+                <td style="padding:10px;">{{ item.equipment_asset_id|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.get_service_type_display }}</td>
+                <td style="padding:10px;">{{ item.technician_name|default:"Unassigned" }}</td>
+                <td style="padding:10px;">
+                    <span style="padding:3px 8px; border-radius:12px; font-weight:bold; font-size:0.75rem; {% if item.reconciliation_status == 'MATCHED' %}background:#dcfce7; color:#166534;{% elif item.reconciliation_status == 'PENDING_PAPER' %}background:#fef9c3; color:#854d0e;{% else %}background:#fee2e2; color:#991b1b;{% endif %}">
+                        {{ item.get_reconciliation_status_display }}
+                    </span>
+                </td>
+                <td style="padding:10px; text-align:center; vertical-align:middle;">
+                    <button type="button"
+                        onclick="openEditWoModal(this)"
+                        data-id="{{ item.id }}"
+                        data-crm-wo="{{ item.crm_wo_number }}"
+                        data-customer="{{ item.customer_or_site }}"
+                        data-asset="{{ item.equipment_asset_id|default:'' }}"
+                        data-crm-parts="{{ item.crm_planned_parts|default:'' }}"
+                        data-serial="{{ item.service_book_serial_no|default:'' }}"
+                        data-tech="{{ item.technician_name|default:'' }}"
+                        data-type="{{ item.service_type }}"
+                        data-actual-parts="{{ item.actual_parts_used|default:'' }}"
+                        data-date="{{ item.service_date|date:'Y-m-d'|default:'' }}"
+                        data-status="{{ item.reconciliation_status }}"
+                        data-notes="{{ item.discrepancy_notes|default:'' }}"
+                        style="background:#0284c7; color:#ffffff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">
+                        ✏️ Edit
+                    </button>
+                </td>
+                <td style="padding:10px; text-align:center; vertical-align:middle;">
+                    <button type="button"
+                        onclick="deleteWorkOrder('{{ item.id }}', '{{ item.crm_wo_number|escapejs }}')"
+                        style="background:#ef4444; color:#ffffff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">
+                        🗑️ Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align:center; padding:20px; color:#64748b;">No Work Order reconciliation records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Modal Popup -->
+<div id="woModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:#fff; width:90%; max-width:700px; max-height:90vh; overflow-y:auto; padding:20px; border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:15px;">
+            <h3 id="woModalTitle" style="margin:0;">Add Work Order Record</h3>
+            <button type="button" onclick="closeWoModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="woForm" onsubmit="submitWoForm(event)">
+            {% csrf_token %}
+            <input type="hidden" id="wo_pk" name="pk" value="">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_crm_number">Dynamics CRM WO # *</label>
+                    <input type="text" id="wo_crm_number" name="crm_wo_number" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_customer">Customer / Site Location *</label>
+                    <input type="text" id="wo_customer" name="customer_or_site" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_asset_id">Equipment / Asset ID</label>
+                    <input type="text" id="wo_asset_id" name="equipment_asset_id" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_serial_no">Service Book Serial No. (Paper Slip)</label>
+                    <input type="text" id="wo_serial_no" name="service_book_serial_no" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_technician">Technician Name</label>
+                    <input type="text" id="wo_technician" name="technician_name" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_service_type">Service Type</label>
+                    <select id="wo_service_type" name="service_type" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="PREVENTATIVE">Preventative Maintenance</option>
+                        <option value="CORRECTIVE">Corrective / Breakdown Repair</option>
+                        <option value="INSPECTION">Inspection & Testing</option>
+                        <option value="OVERHAUL">Major Overhaul</option>
+                        <option value="PART_REPLACEMENT">Service Parts Replacement</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_service_date">Service Execution Date</label>
+                    <input type="date" id="wo_service_date" name="service_date" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_status">Reconciliation Status</label>
+                    <select id="wo_status" name="reconciliation_status" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="PENDING_PAPER">Pending Paper Slip</option>
+                        <option value="MATCHED">Fully Matched</option>
+                        <option value="DISCREPANCY">Parts / Scope Discrepancy</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_crm_parts">CRM Planned Parts Scope</label>
+                    <textarea id="wo_crm_parts" name="crm_planned_parts" rows="2" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></textarea>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_actual_parts">Actual Parts Used (Book Slip)</label>
+                    <textarea id="wo_actual_parts" name="actual_parts_used" rows="2" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></textarea>
+                </div>
+                <div style="grid-column:span 2;">
+                    <label style="font-size:0.8rem; font-weight:bold;" for="wo_discrepancy_notes">Discrepancy / Audit Notes</label>
+                    <textarea id="wo_discrepancy_notes" name="discrepancy_notes" rows="2" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></textarea>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; text-align:right; border-top:1px solid #e2e8f0; padding-top:12px;">
+                <button type="button" onclick="closeWoModal()" style="padding:8px 16px; margin-right:8px; border:1px solid #ccc; background:#f8fafc; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button type="submit" style="padding:8px 16px; background:#2d4b7a; color:#fff; border:none; border-radius:4px; cursor:pointer;">Save Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+window.woTargetUrl = "{% url 'add_work_order' %}";
+
+window.openAddWoModal = function() {
+    const modal = document.getElementById('woModal');
+    if (!modal) return;
+    document.getElementById('woModalTitle').innerText = 'Add Work Order Record';
+    document.getElementById('woForm').reset();
+    document.getElementById('wo_pk').value = '';
+    window.woTargetUrl = "{% url 'add_work_order' %}";
+    modal.style.display = 'flex';
+};
+
+window.openEditWoModal = function(btn) {
+    const modal = document.getElementById('woModal');
+    if (!modal) return;
+
+    const id = btn.getAttribute('data-id');
+    document.getElementById('woModalTitle').innerText = 'Edit Work Order Reconciliation';
+    document.getElementById('wo_pk').value = id;
+
+    document.getElementById('wo_crm_number').value = btn.getAttribute('data-crm-wo') || '';
+    document.getElementById('wo_customer').value = btn.getAttribute('data-customer') || '';
+    document.getElementById('wo_asset_id').value = btn.getAttribute('data-asset') || '';
+    document.getElementById('wo_crm_parts').value = btn.getAttribute('data-crm-parts') || '';
+    document.getElementById('wo_serial_no').value = btn.getAttribute('data-serial') || '';
+    document.getElementById('wo_technician').value = btn.getAttribute('data-tech') || '';
+    document.getElementById('wo_service_type').value = btn.getAttribute('data-type') || 'PREVENTATIVE';
+    document.getElementById('wo_actual_parts').value = btn.getAttribute('data-actual-parts') || '';
+    document.getElementById('wo_service_date').value = btn.getAttribute('data-date') || '';
+    document.getElementById('wo_status').value = btn.getAttribute('data-status') || 'PENDING_PAPER';
+    document.getElementById('wo_discrepancy_notes').value = btn.getAttribute('data-notes') || '';
+
+    window.woTargetUrl = `/work-orders/edit/${id}/`;
+    modal.style.display = 'flex';
+};
+
+window.closeWoModal = function() {
+    const modal = document.getElementById('woModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.submitWoForm = function(e) {
+    e.preventDefault();
+    const formData = new FormData(document.getElementById('woForm'));
+
+    fetch(window.woTargetUrl, {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.closeWoModal();
+            if (typeof loadTab === 'function') {
+                loadTab('/work-orders/');
+            } else {
+                location.reload();
+            }
+        } else {
+            alert("Error saving record: " + JSON.stringify(data.errors));
+        }
+    })
+    .catch(err => console.error("Error submitting WO form:", err));
+};
+
+window.deleteWorkOrder = function(pk, crmNo) {
+    if (confirm(`Delete Work Order record ${crmNo}?`)) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch(`/work-orders/delete/${pk}/`, {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (typeof loadTab === 'function') {
+                    loadTab('/work-orders/');
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert("Error deleting record.");
+            }
+        })
+        .catch(err => console.error("Error deleting WO record:", err));
+    }
+};
+
+// Live Table Search Filter
+window.filterWorkOrdersTable = function() {
+    const input = document.getElementById("woSearchInput");
+    if (!input) return;
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById("workOrderTable");
+    if (!table) return;
+
+    const tr = table.getElementsByTagName("tr");
+    for (let i = 1; i < tr.length; i++) {
+        let row = tr[i];
+        let textContent = row.textContent || row.innerText;
+        row.style.display = (textContent.toUpperCase().indexOf(filter) > -1) ? "" : "none";
+    }
+};
+
+// Export to Excel
+window.exportWorkOrdersExcel = function() {
+    const table = document.getElementById("workOrderTable");
+    if (!table) return;
+
+    const tableClone = table.cloneNode(true);
+    for (let row of tableClone.rows) {
+        if (row.cells.length > 6) row.deleteCell(6); // remove actions column
+    }
+
+    const wb = XLSX.utils.table_to_book(tableClone, { sheet: "Work Orders Registry" });
+    XLSX.writeFile(wb, "Work_Orders_Report.xlsx");
+};
+
+// Export to PDF
+window.exportWorkOrdersPDF = function() {
+    if (!window.jspdf) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.text("Work Orders & Service Book Matching Report", 14, 15);
+
+    doc.autoTable({
+        html: '#workOrderTable',
+        startY: 22,
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [45, 75, 122] },
+        columns: [
+            { header: 'CRM WO #', dataKey: 0 },
+            { header: 'Book Serial #', dataKey: 1 },
+            { header: 'Customer / Site', dataKey: 2 },
+            { header: 'Asset ID', dataKey: 3 },
+            { header: 'Service Type', dataKey: 4 },
+            { header: 'Technician', dataKey: 5 },
+            { header: 'Status', dataKey: 6 }
+        ]
+    });
+
+    doc.save("Work_Orders_Report.pdf");
+};
+</script>

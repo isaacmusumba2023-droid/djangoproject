@@ -1,0 +1,268 @@
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="generic-module-card">
+    <h2 style="margin-top:0;">PM Service Schedule (Generators)</h2>
+
+    <!-- Dot Plot Chart Container -->
+    <div style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
+        <h4 style="margin-top:0; color:#334155;">Days Remaining vs G-Codes (PM Service Cycle)</h4>
+        <div style="height: 280px; position: relative;">
+            <canvas id="pmDotPlot"></canvas>
+        </div>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">PM Service Schedule (Generators)</h2>
+        <a href="{% url 'export_pm_schedule' %}" class="btn-submit" style="background: #16a34a; text-decoration: none; padding: 6px 14px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+    📊 Export to Excel (CSV)
+        </a>
+    </div>
+
+    <!-- Generator PM Table -->
+    <div class="table-responsive">
+        <table class="data-table" id="pmTable">
+            <thead>
+                <tr>
+                    <th>G-Code</th>
+                    <th>Model</th>
+                    <th>Current Hrs</th>
+                    <th>Cycle Start Date</th>
+                    <th>Next Service</th>
+                    <th>Days Remaining</th>
+                    <th>Status</th>
+                    <th style="text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in generators %}
+                <tr>
+                    <td><strong>{{ g.g_code }}</strong></td>
+                    <td>{{ g.model|default:"-" }}</td>
+                    <td><strong>{{ g.running_hrs }} hrs</strong></td>
+                    <td>{{ g.cycle_start_date }}</td>
+                    <td>{{ g.next_service_info.type }}</td>
+                    <td><strong>{{ g.next_service_info.days_left }} Days</strong></td>
+                    <td>
+                        {% if g.next_service_info.status == 'OVERDUE' %}
+                            <span style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem;">OVERDUE</span>
+                        {% elif g.next_service_info.status == 'DUE SOON' %}
+                            <span style="background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem;">DUE SOON</span>
+                        {% else %}
+                            <span style="background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem;">OK</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn-submit" style="background:#0284c7; padding: 3px 8px; font-size: 0.75rem; margin:0;"
+                            data-id="{{ g.id }}"
+                            data-gcode="{{ g.g_code }}"
+                            data-hrs="{{ g.running_hrs }}"
+                            data-stype="{{ g.next_service_info.type }}"
+                            onclick="openLogPmModal(this)">
+                            Mark Completed
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #94a3b8; padding: 15px;">No generator assets found. Add generators from the Generators sidebar tab.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Service Log History -->
+    <h3 style="margin-top: 35px; color: #0f172a;">Service History Log</h3>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>G-Code</th>
+                    <th>Service Done</th>
+                    <th>Hrs at Service</th>
+                    <th>Technician</th>
+                    <th>Work Order #</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                    <td>{{ log.service_date }}</td>
+                    <td><strong>{{ log.generator.g_code }}</strong></td>
+                    <td>{{ log.service_type }}</td>
+                    <td>{{ log.running_hrs_at_service }} hrs</td>
+                    <td>{{ log.technician|default:"-" }}</td>
+                    <td>{{ log.work_order_number|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #94a3b8; padding: 15px;">No PM services logged yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Centered Modal: Complete PM Service -->
+<dialog id="logPmModal" style="border:1px solid #cbd5e1; border-radius:8px; padding:20px; max-width:480px; width:90%; margin: auto; inset: 0; position: fixed; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+    <h3 style="margin-top:0; color:#0f172a;">Mark Service Done - <span id="modal_gcode"></span></h3>
+    <form id="logPmForm" method="POST" action="">
+        {% csrf_token %}
+        <div style="margin-bottom:10px;">
+            <label style="font-size:0.8rem; font-weight:bold;">Service Type</label>
+            <select name="service_type" id="modal_service_type" class="form-control" required>
+                <option value="Service A">Service A (14-Day Cycle)</option>
+                <option value="Service B">Service B (90-Day Cycle - Restart Cycle)</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:0.8rem; font-weight:bold;">Updated Running Hours (Must be &ge; current)</label>
+            <input type="number" step="0.1" name="running_hrs_at_service" id="modal_hrs" class="form-control" required min="0">
+            <small style="color:#64748b;">Current baseline: <span id="modal_current_hrs_label"></span> hrs</small>
+        </div>
+
+        <!-- Inventory Stock Selection Section -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+                <label style="font-size:0.8rem; font-weight:bold;">Spare Part Used (Optional)</label>
+                <select name="part_id" class="form-control">
+                    <option value="">-- No Parts Used --</option>
+                    {% for part in warehouse_parts %}
+                        <option value="{{ part.id }}">{{ part.part_name }} (Available: {{ part.quantity }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="font-size:0.8rem; font-weight:bold;">Quantity Used</label>
+                <input type="number" name="part_qty" class="form-control" min="1" value="1">
+            </div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:0.8rem; font-weight:bold;">Service Date</label>
+            <input type="date" name="service_date" id="modal_service_date" class="form-control" required>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:0.8rem; font-weight:bold;">Technician Name</label>
+            <input type="text" name="technician" class="form-control" placeholder="Technician name...">
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label style="font-size:0.8rem; font-weight:bold;">Work Order #</label>
+            <input type="text" name="work_order_number" class="form-control" placeholder="e.g. WO-1092">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn-delete" onclick="document.getElementById('logPmModal').close()">Cancel</button>
+            <button type="submit" class="btn-submit" style="margin:0;">Save & Update</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- JavaScript for Modal & Dynamic Color Scatter Chart -->
+<script>
+function openLogPmModal(btn) {
+    var d = btn.dataset;
+    var form = document.getElementById('logPmForm');
+    if (!form) return;
+
+    form.action = '/pm-schedule/log/' + d.id + '/';
+    document.getElementById('modal_gcode').innerText = d.gcode || '';
+    document.getElementById('modal_hrs').value = d.hrs || 0;
+    document.getElementById('modal_hrs').min = d.hrs || 0;
+    document.getElementById('modal_current_hrs_label').innerText = d.hrs || 0;
+    document.getElementById('modal_service_date').value = new Date().toISOString().split('T')[0];
+
+    document.getElementById('logPmModal').showModal();
+}
+
+(function renderDotPlot() {
+    // Direct raw injection using safe tag
+    var rawData = {{ chart_data_json|safe }};
+    if (!rawData || rawData.length === 0) return;
+
+    var canvas = document.getElementById('pmDotPlot');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+
+    var plotData = rawData.map(function(item) {
+        return {
+            x: item.days_left,
+            y: item.g_code,
+            status: item.days_left < 0 ? 'OVERDUE' : 'OK'
+        };
+    });
+
+    // Custom Vertical Line Plugin at x = 0 (Today)
+    var verticalLinePlugin = {
+        id: 'verticalLine',
+        beforeDraw: function(chart) {
+            var xAxis = chart.scales.x;
+            var yAxis = chart.scales.y;
+            var xValue = xAxis.getPixelForValue(0);
+
+            if (xValue >= xAxis.left && xValue <= xAxis.right) {
+                var ctx = chart.ctx;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(xValue, yAxis.top);
+                ctx.lineTo(xValue, yAxis.bottom);
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#ef4444';
+                ctx.stroke();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillText('TODAY (0 Days)', xValue + 5, yAxis.top + 12);
+                ctx.restore();
+            }
+        }
+    };
+
+    new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'PM Days Remaining',
+                data: plotData,
+                backgroundColor: function(context) {
+                    var raw = context.raw;
+                    if (!raw) return '#22c55e';
+                    return raw.x < 0 ? '#ef4444' : '#22c55e';
+                },
+                borderColor: function(context) {
+                    var raw = context.raw;
+                    if (!raw) return '#15803d';
+                    return raw.x < 0 ? '#b91c1c' : '#15803d';
+                },
+                pointRadius: 8,
+                pointHoverRadius: 10
+            }]
+        },
+        plugins: [verticalLinePlugin],
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    title: { display: true, text: 'Days Remaining' },
+                    min: -15,
+                    max: 95
+                },
+                y: {
+                    type: 'category',
+                    labels: rawData.map(function(d) { return d.g_code; }),
+                    title: { display: true, text: 'G-Codes' }
+                }
+            }
+        }
+    });
+})();
+</script>

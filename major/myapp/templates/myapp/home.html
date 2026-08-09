@@ -1,0 +1,582 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet General Management</title>
+    <link rel="stylesheet" href="{% static 'myapp/css/main.css' %}">
+
+    <style>
+    /* Layout & Independent Scrolling Fix */
+    body {
+        margin: 0;
+        background-color: #f1f5f9;
+    }
+    
+    .container {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    /* Fixed / Sticky Sidebar */
+    aside {
+        width: 280px;
+        position: sticky;
+        top: 20px;
+        height: calc(100vh - 40px);
+        overflow-y: auto;
+        flex-shrink: 0;
+        padding-right: 5px;
+    }
+
+    /* Scrolling Main Content Section */
+    section {
+        flex: 1;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    /* 1. Metrics Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin: 20px 0;
+    }
+    .metric-card {
+        background: #1e293b;
+        color: #ffffff;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #0284c7;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .metric-card h4 {
+        margin: 0;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+    .metric-card p {
+        margin: 5px 0 0 0;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    /* 2. Form Styling & Grid */
+    .form-container {
+        background: #f8fafc;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .form-container h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #0f172a;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    .form-group label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-bottom: 4px;
+        color: #475569;
+    }
+    .form-control {
+        padding: 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .btn-submit {
+        background: #0284c7;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-top: 15px;
+    }
+    .btn-submit:hover {
+        background: #0369a1;
+    }
+
+    /* 3. Asset Log Table Styling */
+    .table-responsive {
+        overflow-x: auto;
+        width: 100%;
+        margin-top: 15px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: none !important;
+        background-color: transparent;
+        font-family: inherit;
+    }
+
+    .data-table th,
+    .data-table td {
+        border: none !important;
+        padding: 8px 12px;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .data-table tbody tr {
+        border-bottom: 1px solid #e2e8f0 !important;
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    .data-table td {
+        font-size: 0.8125rem;
+        color: #334155;
+    }
+
+    .data-table th {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 2px solid #cbd5e1 !important;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .btn-edit, .btn-delete {
+        padding: 3px 8px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+    }
+    .btn-edit { background: #f59e0b; color: white; border: none; cursor: pointer; margin-right: 4px; font-weight: bold; }
+    .btn-delete { background: #ef4444; color: white; border: none; cursor: pointer; font-weight: bold; }
+
+    /* Modal Overlay Styles */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.65);
+        display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-content {
+        background: #ffffff; padding: 25px; border-radius: 8px; max-width: 900px; width: 90%;
+        max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    .generic-module-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    </style>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- jsPDF & AutoTable for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+    <!-- HEADER: Title and navigation -->
+    <header>
+        <h1>General Operations</h1>
+        <nav>
+            <ul>
+                <li><a href="{% url 'overview' %}">Dashboard</a></li>
+                <li><a href="{% url 'activity_planner' %}">Projects</a></li>
+                <li><a href="{% url 'audit_logs' %}">Admin Portal</a></li>
+                <li><input type="text" id="Search" placeholder="Search here"><label for="Search">- Find</label></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+
+        <!-- SECTION: Dynamic Content Controller (Scrollable Area) -->
+        <section>
+            {% if active_module == 'overview' %}
+                {% include 'myapp/partials/overview_content.html' %}
+            {% elif active_module == 'generators' %}
+                {% include 'myapp/partials/generators_content.html' %}
+            {% elif active_module == 'warehouse_parts' %}
+                {% include 'myapp/partials/warehouse_content.html' %}
+            {% elif active_module == 'pm_schedule' %}
+                {% include 'myapp/partials/pm_schedule_content.html' %}
+            {% elif active_module == 'leave_plans' %}
+                {% include 'myapp/partials/leave_plans_content.html'%}
+            {% elif active_module == 'resident_cards'%}
+                {% include 'myapp/partials/resident_cards_content.html'%}
+            {% elif active_module == 'work_orders'%}
+                {% include 'myapp/partials/work_orders_content.html'%}
+            {% else %}
+                <div class="generic-module-card">
+                    <h2>{{ title }}</h2>
+                    <p>{{ content }}</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- ASIDE: Full dynamic sidebar with Django URL routing (Fixed/Sticky Area) -->
+        <aside>
+            <h3>1. Exec & Ops</h3>
+            <ul>
+                <li><a href="{% url 'overview' %}"><span class="icon">📊</span> Overview</a></li>
+                <li><a href="{% url 'gis_map' %}"><span class="icon">🗺️</span> GIS Map</a></li>
+                <li><a href="{% url 'dispatch' %}"><span class="icon">🚨</span> Dispatch</a></li>
+            </ul>
+
+            <h3>2. Fleet Management</h3>
+            <ul>
+                <li><a href="{% url 'generators' %}"><span class="icon">⚙️</span> Generators</a></li>
+                <li><a href="{% url 'diagnostics' %}"><span class="icon">📈</span> Diagnostics</a></li>
+                <li><a href="{% url 'well_sites' %}"><span class="icon">🛢️</span> Well Sites</a></li>
+                <li><a href="{% url 'disposal' %}"><span class="icon">🗑️</span> Disposal</a></li>
+                <li><a href="{% url 'trips' %}"><span class="icon">🚨</span> Trips</a></li>
+            </ul>
+
+            <h3>3. Maintenance</h3>
+            <ul>
+                <li><a href="{% url 'work_orders' %}"><span class="icon">🔧</span> Work Orders</a></li>
+                <li><a href="{% url 'pm_schedule' %}"><span class="icon">📅</span> PM Schedule</a></li>
+                <li><a href="{% url 'load_tests' %}"><span class="icon">⚡</span> Load Tests</a></li>
+                <li><a href="{% url 'activity_planner' %}"><span class="icon">📚</span> Activity Planner</a></li>
+                <li><a href="{% url 'qa_qc' %}"><span class="icon">✅</span> QA / QC</a></li>
+            </ul>
+
+            <h3>4. Supply Chain</h3>
+            <ul>
+                <li><a href="{% url 'warehouse_parts' %}"><span class="icon">📦</span> Warehouse</a></li>
+                <li><a href="{% url 'van_stock' %}"><span class="icon">🚐</span> Van Stock</a></li>
+                <li><a href="{% url 'purchase_orders' %}"><span class="icon">🛒</span> Purchase Orders</a></li>
+                <li><a href="{% url 'tool_calibrations' %}"><span class="icon">🛠️</span> Tool Calibrations</a></li>
+            </ul>
+
+            <h3>5. Commercial</h3>
+            <ul>
+                <li><a href="{% url 'contracts' %}"><span class="icon">📝</span> Contracts</a></li>
+                <li><a href="{% url 'invoicing' %}"><span class="icon">💰</span> Invoicing</a></li>
+            </ul>
+
+            <h3>6. Analytics & HSE</h3>
+            <ul>
+                <li><a href="{% url 'reliability_rcm' %}"><span class="icon">📉</span> Reliability RCM</a></li>
+                <li><a href="{% url 'fuel_logistics' %}"><span class="icon">⛽</span> Fuel Logistics</a></li>
+                <li><a href="{% url 'hse_safety' %}"><span class="icon">🦺</span> HSE & Safety</a></li>
+            </ul>
+
+            <h3>7. Admin & HR</h3>
+            <ul>
+                <li><a href="{% url 'roles_access' %}"><span class="icon">🔐</span> Roles & Access</a></li>
+                <li><a href="{% url 'leave_plans' %}"><span class="icon">🏖️</span> Leave Plans</a></li>
+                <li><a href="{% url 'resident_cards' %}"><span class="icon">🪪</span> Resident Cards</a></li>
+                <li><a href="{% url 'medical_fitness' %}"><span class="icon">🏥</span> Medical Fitness</a></li>
+                <li><a href="{% url 'safety_training' %}"><span class="icon">🎓</span> Safety Training</a></li>
+                <li><a href="{% url 'master_data' %}"><span class="icon">📚</span> Master Data</a></li>
+                <li><a href="{% url 'audit_logs' %}"><span class="icon">🛡️</span> Audit Logs</a></li>
+            </ul>
+        </aside>
+
+    </div>
+
+    <!-- SCRIPT CONTROLLERS -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const mainSection = document.querySelector("section");
+
+        // Dynamic Sidebar & Header Navigation via AJAX
+        document.querySelectorAll("aside a, header nav a").forEach(link => {
+            link.addEventListener("click", function(e) {
+                e.preventDefault();
+                const targetUrl = this.getAttribute("href");
+
+                mainSection.style.opacity = "0.4";
+                mainSection.style.transition = "opacity 0.15s ease-in-out";
+
+                fetch(targetUrl, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+                .then(res => res.text())
+                .then(html => {
+                    mainSection.innerHTML = html;
+                    mainSection.style.opacity = "1";
+                    window.history.pushState({}, "", targetUrl);
+                })
+                .catch(err => {
+                    mainSection.style.opacity = "1";
+                    console.error("Navigation error:", err);
+                });
+            });
+        });
+
+        // Dynamic Form Submission for AJAX forms
+        mainSection.addEventListener("submit", function(e) {
+            if (e.target && e.target.classList.contains("ajax-asset-form")) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+
+                fetch(e.target.action, {
+                    method: "POST",
+                    body: formData,
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                })
+                .then(res => res.text())
+                .then(html => {
+                    mainSection.innerHTML = html;
+                });
+            }
+        });
+    });
+
+    // Modal Controller Functions
+    function openAddModal() {
+        const addModal = document.getElementById('addModal');
+        if (addModal) addModal.style.display = 'flex';
+    }
+
+    function closeAddModal() {
+        const addModal = document.getElementById('addModal');
+        if (addModal) addModal.style.display = 'none';
+    }
+
+    function openEditModal(btn) {
+        const fields = [
+            'g_code', 'serial_number', 'model', 'type', 'running_hrs', 'kva',
+            'year_of_manufacture', 'service_yr_in_koc', 'from_location', 'to_location',
+            'field', 'user', 'movement_date', 'purpose', 'service_technician',
+            'supervisor', 'reason_comment'
+        ];
+
+        const assetIdInput = document.getElementById('edit_asset_id');
+        if (assetIdInput) {
+            assetIdInput.value = btn.getAttribute('data-id') || '';
+        }
+
+        fields.forEach(field => {
+            const input = document.getElementById('edit_' + field);
+            if (input) {
+                let val = btn.getAttribute('data-' + field);
+                if (!val || val === 'None' || val === 'null') {
+                    val = '';
+                }
+                if (field === 'movement_date' && val.includes('T')) {
+                    val = val.split('T')[0];
+                }
+                input.value = val;
+            }
+        });
+
+        const editModal = document.getElementById('editModal');
+        if (editModal) editModal.style.display = 'flex';
+    }
+
+    // Close Modals on Overlay Click
+    window.addEventListener("click", function(e) {
+        const addModal = document.getElementById('addModal');
+        const editModal = document.getElementById('editModal');
+        if (e.target === addModal) closeAddModal();
+        if (e.target === editModal) closeEditModal();
+    });
+
+    // Warehouse & Part Functions
+    function filterPartsTable() {
+        var input = document.getElementById("partSearchInput");
+        if (!input) return;
+        var filter = input.value.toLowerCase().trim();
+        var table = document.getElementById("partsTable");
+        if (!table) return;
+        var tbody = table.getElementsByTagName("tbody")[0];
+        var rows = tbody.getElementsByTagName("tr");
+
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].id === "emptyRow") continue;
+            var rowText = rows[i].innerText.toLowerCase();
+            rows[i].style.display = rowText.indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+
+    function openEditModalFromBtn(btn) {
+        var d = btn.dataset;
+        document.getElementById('editPartForm').action = '/warehouse-parts/edit/' + d.id + '/';
+
+        document.getElementById('edit_part_name').value = d.name || '';
+        document.getElementById('edit_part_number').value = d.number || '';
+        document.getElementById('edit_model').value = d.model || '';
+        document.getElementById('edit_supplier').value = d.supplier || '';
+        document.getElementById('edit_location').value = d.location || '';
+        document.getElementById('edit_compatibility_asset').value = d.asset || '';
+        document.getElementById('edit_quantity').value = d.qty || 0;
+        document.getElementById('edit_date_received').value = d.date || '';
+        document.getElementById('edit_description').value = d.desc || '';
+
+        document.getElementById('editPartModal').showModal();
+    }
+
+    function openDeleteModalFromBtn(btn) {
+        var d = btn.dataset;
+        document.getElementById('deletePartForm').action = '/warehouse-parts/delete/' + d.id + '/';
+        document.getElementById('deletePartName').innerText = d.name || '';
+        document.getElementById('deletePartModal').showModal();
+    }
+
+    function openIssueModalFromBtn(btn) {
+        var d = btn.dataset;
+        var form = document.getElementById('issuePartForm');
+        if (!form) return;
+
+        form.action = '/warehouse-parts/issue/' + d.id + '/';
+        document.getElementById('issue_part_name').value = d.name || '';
+        document.getElementById('issue_available_qty').value = d.qty || 0;
+
+        var qtyInput = document.getElementById('issue_quantity');
+        qtyInput.value = 1;
+        qtyInput.max = d.qty || 1;
+
+        document.getElementById('issuePartModal').showModal();
+    }
+
+    function filterIssueLogTable() {
+        var input = document.getElementById("logSearchInput");
+        if (!input) return;
+        var filter = input.value.toLowerCase().trim();
+        var table = document.getElementById("issueLogTable");
+        if (!table) return;
+        var tbody = table.getElementsByTagName("tbody")[0];
+        var rows = tbody.getElementsByTagName("tr");
+
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].id === "emptyLogRow") continue;
+            var rowText = rows[i].innerText.toLowerCase();
+            rows[i].style.display = rowText.indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+
+    function openDeleteLogModal(btn) {
+        var d = btn.dataset;
+        var form = document.getElementById('deleteLogForm');
+        if (!form) return;
+
+        form.action = '/warehouse-parts/issue-log/delete/' + d.id + '/';
+        document.getElementById('deleteLogPartName').innerText = d.name || '';
+        document.getElementById('deleteLogModal').showModal();
+    }
+
+    function exportIssueLogsToExcel() {
+        var table = document.getElementById("issueLogTable");
+        if (!table) return;
+
+        var tableClone = table.cloneNode(true);
+        for (var i = 0; i < tableClone.rows.length; i++) {
+            tableClone.rows[i].deleteCell(-1);
+        }
+
+        var wb = XLSX.utils.table_to_book(tableClone, { sheet: "Issued Parts History" });
+        XLSX.writeFile(wb, "Warehouse_Issued_Parts_Log.xlsx");
+    }
+
+    function exportIssueLogsToPDF() {
+        if (!window.jspdf) return;
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF({ orientation: "landscape" });
+
+        doc.text("Warehouse Issued Parts Audit Log - Fleet Management", 14, 15);
+
+        doc.autoTable({
+            html: '#issueLogTable',
+            startY: 22,
+            styles: { fontSize: 8, cellPadding: 3 },
+            headStyles: { fillColor: [30, 41, 59] },
+            columns: [
+                { header: 'Date & Time', dataKey: 0 },
+                { header: 'Part Name', dataKey: 1 },
+                { header: 'Part Number', dataKey: 2 },
+                { header: 'Qty Issued', dataKey: 3 },
+                { header: 'Destination', dataKey: 4 },
+                { header: 'Notes', dataKey: 5 }
+            ]
+        });
+
+        doc.save("Warehouse_Issued_Parts_Log.pdf");
+    }
+
+    function openLogPmModal(btn) {
+        var d = btn.dataset;
+        var form = document.getElementById('logPmForm');
+        if (!form) return;
+
+        form.action = '/pm-schedule/log/' + d.id + '/';
+        document.getElementById('modal_gcode').innerText = d.gcode || '';
+        document.getElementById('modal_hrs').value = d.hrs || 0;
+        document.getElementById('modal_service_date').value = new Date().toISOString().split('T')[0];
+
+        document.getElementById('logPmModal').showModal();
+    }
+
+    function filterPmTable() {
+        var input = document.getElementById("pmSearch");
+        if (!input) return;
+        var filter = input.value.toLowerCase().trim();
+        var table = document.getElementById("pmTable");
+        if (!table) return;
+
+        var rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+        for (var i = 0; i < rows.length; i++) {
+            var text = rows[i].innerText.toLowerCase();
+            rows[i].style.display = text.indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+
+    // Global Event Delegation for Dynamic Modules
+    document.addEventListener('click', function(event) {
+        var editBtn = event.target.closest('.btn-edit') || event.target.closest('.edit-btn');
+        if (editBtn) {
+            if (typeof openEditModalFromBtn === 'function' && editBtn.hasAttribute('data-id') && editBtn.closest('#partsTable')) {
+                openEditModalFromBtn(editBtn);
+            } else if (typeof openEditModal === 'function' && editBtn.hasAttribute('data-g_code')) {
+                openEditModal(editBtn);
+            }
+        }
+    });
+
+    document.addEventListener('input', function(event) {
+        if (event.target.id === 'pmSearch') {
+            filterPmTable();
+        } else if (event.target.id === 'partSearchInput') {
+            filterPartsTable();
+        } else if (event.target.id === 'logSearchInput') {
+            filterIssueLogTable();
+        }
+    });
+    </script>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>&copy; 2026 Oil & Gas Power Unit Management System. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

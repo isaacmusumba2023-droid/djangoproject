@@ -1,0 +1,285 @@
+<!-- Summary KPI Cards -->
+<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; margin-bottom:20px;">
+    <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #16a34a; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <small style="color:#64748b; font-weight:bold;">ACTIVE / VALID CARDS</small>
+        <h2 style="margin:5px 0 0; color:#16a34a;">{{ total_active|default:0 }}</h2>
+    </div>
+    <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #eab308; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <small style="color:#64748b; font-weight:bold;">EXPIRING IN 30 DAYS</small>
+        <h2 style="margin:5px 0 0; color:#ca8a04;">{{ expiring_30|default:0 }}</h2>
+    </div>
+    <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #dc2626; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <small style="color:#64748b; font-weight:bold;">EXPIRED CARDS</small>
+        <h2 style="margin:5px 0 0; color:#dc2626;">{{ expired_count|default:0 }}</h2>
+    </div>
+</div>
+
+<!-- Controls Header with Search and Add Button -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
+    <h2 style="margin:0; font-size:1.1rem;">Admin & HR - Resident Cards & Civil IDs</h2>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <input type="text" id="cardSearchInput" onkeyup="filterResidentCardsTable()" placeholder="Search Name, Civil ID..." style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:4px; width:220px; font-size:0.85rem;">
+        <button class="btn btn-primary" onclick="openAddCardModal()" style="background:#2d4b7a; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.8rem;">
+            + Add Resident Card
+        </button>
+    </div>
+</div>
+
+<!-- Table with fully independent columns -->
+<div style="overflow-x:auto; background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+    <table id="residentTable" style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">
+        <thead>
+            <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1; color:#334155;">
+                <th style="padding:10px;">Employee Name</th>
+                <th style="padding:10px;">Employee ID</th>
+                <th style="padding:10px;">Civil ID No.</th>
+                <th style="padding:10px;">Nationality</th>
+                <th style="padding:10px;">Designation</th>
+                <th style="padding:10px;">Sponsor</th>
+                <th style="padding:10px;">Serial No.</th>
+                <th style="padding:10px;">Issue Date</th>
+                <th style="padding:10px;">Expire Date</th>
+                <th style="padding:10px;">Status</th>
+                <th style="padding:10px;">Document</th>
+                <th style="padding:10px; text-align:center;">Edit</th>
+                <th style="padding:10px; text-align:center;">Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cards %}
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:10px;"><strong>{{ item.employee_name }}</strong></td>
+                <td style="padding:10px;">{{ item.employee_id|default:"N/A" }}</td>
+                <td style="padding:10px;"><code>{{ item.civil_id_no }}</code></td>
+                <td style="padding:10px;">{{ item.nationality|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.designation_on_card }}</td>
+                <td style="padding:10px;">{{ item.project_sponsor|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.card_serial_no|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.issue_date|date:"Y-m-d"|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.expire_date|date:"Y-m-d" }}</td>
+                <td style="padding:10px;">
+                    <span style="padding:3px 8px; border-radius:12px; font-weight:bold; font-size:0.75rem; {% if item.status == 'ACTIVE' %}background:#dcfce7; color:#166534;{% elif item.status == 'EXPIRING_SOON' %}background:#fef9c3; color:#854d0e;{% elif item.status == 'IN_PROGRESS' %}background:#e0f2fe; color:#0369a1;{% else %}background:#fee2e2; color:#991b1b;{% endif %}">
+                        {{ item.get_status_display }}
+                    </span>
+                </td>
+                <td style="padding:10px;">
+                    {% if item.card_document %}
+                        <a href="{{ item.card_document.url }}" target="_blank" style="color:#0284c7; font-weight:600; text-decoration:none;">📄 View File</a>
+                    {% else %}
+                        <span style="color:#94a3b8; font-size:0.75rem;">No File</span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px; text-align:center; vertical-align:middle;">
+                    <button type="button"
+                        onclick="openEditCardModal(this)"
+                        data-id="{{ item.id }}"
+                        data-name="{{ item.employee_name|escapejs }}"
+                        data-empid="{{ item.employee_id|escapejs }}"
+                        data-civilid="{{ item.civil_id_no|escapejs }}"
+                        data-nationality="{{ item.nationality|default:''|escapejs }}"
+                        data-designation="{{ item.designation_on_card|escapejs }}"
+                        data-sponsor="{{ item.project_sponsor|default:''|escapejs }}"
+                        data-serial="{{ item.card_serial_no|default:''|escapejs }}"
+                        data-issuedate="{{ item.issue_date|date:'Y-m-d'|default:'' }}"
+                        data-expiredate="{{ item.expire_date|date:'Y-m-d'|default:'' }}"
+                        data-status="{{ item.status }}"
+                        data-notes="{{ item.renewal_notes|default:''|escapejs }}"
+                        style="background:#0284c7; color:#ffffff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">
+                        ✏️ Edit
+                    </button>
+                </td>
+                <td style="padding:10px; text-align:center; vertical-align:middle;">
+                    <button type="button"
+                        onclick="deleteResidentCard('{{ item.id }}', '{{ item.employee_name|escapejs }}')"
+                        style="background:#ef4444; color:#ffffff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">
+                        🗑️ Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="13" style="text-align:center; padding:20px; color:#64748b;">No resident card records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Resident Card Modal Popup (Add & Edit) -->
+<div id="cardModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:#fff; width:90%; max-width:700px; max-height:90vh; overflow-y:auto; padding:20px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:15px;">
+            <h3 id="cardModalTitle" style="margin:0;">Add Resident Card Record</h3>
+            <button onclick="closeCardModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="cardForm" enctype="multipart/form-data" onsubmit="submitCardForm(event)">
+            {% csrf_token %}
+            <input type="hidden" id="card_pk" name="pk" value="">
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Employee Name *</label>
+                    <input type="text" id="id_employee_name" name="employee_name" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Employee ID *</label>
+                    <input type="text" id="id_employee_id" name="employee_id" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Civil ID No. *</label>
+                    <input type="text" id="id_civil_id_no" name="civil_id_no" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Nationality</label>
+                    <input type="text" id="id_nationality" name="nationality" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Designation on Card *</label>
+                    <input type="text" id="id_designation_on_card" name="designation_on_card" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Project Sponsor</label>
+                    <input type="text" id="id_project_sponsor" name="project_sponsor" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Card Serial No.</label>
+                    <input type="text" id="id_card_serial_no" name="card_serial_no" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Status</label>
+                    <select id="id_status" name="status" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="ACTIVE">Active / Valid</option>
+                        <option value="IN_PROGRESS">Renewal in Progress</option>
+                        <option value="EXPIRING_SOON">Expiring Soon</option>
+                        <option value="EXPIRED">Expired</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Issue Date</label>
+                    <input type="date" id="id_issue_date" name="issue_date" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Expire Date *</label>
+                    <input type="date" id="id_expire_date" name="expire_date" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.8rem; font-weight:bold;">Card Document (PDF / Image)</label>
+                    <input type="file" name="card_document" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.8rem; font-weight:bold;">Renewal Notes</label>
+                    <textarea id="id_renewal_notes" name="renewal_notes" rows="2" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></textarea>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; text-align:right; border-top:1px solid #e2e8f0; padding-top:12px;">
+                <button type="button" onclick="closeCardModal()" style="padding:8px 16px; margin-right:8px; border:1px solid #ccc; background:#f8fafc; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button type="submit" style="padding:8px 16px; background:#2d4b7a; color:#fff; border:none; border-radius:4px; cursor:pointer;">Save Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let cardTargetUrl = "{% url 'add_resident_card' %}";
+
+window.openAddCardModal = function() {
+    document.getElementById('cardModalTitle').innerText = 'Add Resident Card Record';
+    document.getElementById('cardForm').reset();
+    document.getElementById('card_pk').value = '';
+    cardTargetUrl = "{% url 'add_resident_card' %}";
+    document.getElementById('cardModal').style.display = 'flex';
+};
+
+window.openEditCardModal = function(btn) {
+    document.getElementById('cardModalTitle').innerText = 'Edit Resident Card Record';
+    const id = btn.getAttribute('data-id');
+    document.getElementById('card_pk').value = id;
+
+    document.getElementById('id_employee_name').value = btn.getAttribute('data-name') || '';
+    document.getElementById('id_employee_id').value = btn.getAttribute('data-empid') || '';
+    document.getElementById('id_civil_id_no').value = btn.getAttribute('data-civilid') || '';
+    document.getElementById('id_nationality').value = btn.getAttribute('data-nationality') || '';
+    document.getElementById('id_designation_on_card').value = btn.getAttribute('data-designation') || '';
+    document.getElementById('id_project_sponsor').value = btn.getAttribute('data-sponsor') || '';
+    document.getElementById('id_card_serial_no').value = btn.getAttribute('data-serial') || '';
+    document.getElementById('id_issue_date').value = btn.getAttribute('data-issuedate') || '';
+    document.getElementById('id_expire_date').value = btn.getAttribute('data-expiredate') || '';
+    document.getElementById('id_status').value = btn.getAttribute('data-status') || 'ACTIVE';
+    document.getElementById('id_renewal_notes').value = btn.getAttribute('data-notes') || '';
+
+    cardTargetUrl = `/resident-cards/edit/${id}/`;
+    document.getElementById('cardModal').style.display = 'flex';
+};
+
+window.closeCardModal = function() {
+    document.getElementById('cardModal').style.display = 'none';
+};
+
+window.submitCardForm = function(e) {
+    e.preventDefault();
+    const formData = new FormData(document.getElementById('cardForm'));
+
+    fetch(cardTargetUrl, {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeCardModal();
+            if (typeof loadTab === 'function') {
+                loadTab('/resident-cards/');
+            } else {
+                location.reload();
+            }
+        } else {
+            alert("Error: " + JSON.stringify(data.errors));
+        }
+    })
+    .catch(err => console.error("Error submitting card form:", err));
+};
+
+window.deleteResidentCard = function(pk, name) {
+    if (confirm(`Are you sure you want to delete the resident card for ${name}?`)) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch(`/resident-cards/delete/${pk}/`, {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (typeof loadTab === 'function') {
+                    loadTab('/resident-cards/');
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert("Error deleting record.");
+            }
+        })
+        .catch(err => console.error("Error deleting card:", err));
+    }
+};
+
+window.filterResidentCardsTable = function() {
+    const input = document.getElementById("cardSearchInput");
+    if (!input) return;
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById("residentTable");
+    if (!table) return;
+
+    const tr = table.getElementsByTagName("tr");
+    for (let i = 1; i < tr.length; i++) {
+        let row = tr[i];
+        let textContent = row.textContent || row.innerText;
+        row.style.display = (textContent.toUpperCase().indexOf(filter) > -1) ? "" : "none";
+    }
+};
+</script>

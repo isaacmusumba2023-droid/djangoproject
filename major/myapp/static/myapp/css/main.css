@@ -1,0 +1,164 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+    color: #333;
+    background-color: #f4f4f9;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: #2d4b7a;
+    color: #ffffff;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #3498db;
+}
+
+header h1 {
+    font-size: 1.2rem;
+    letter-spacing: 0.03em;
+}
+
+header nav ul {
+    list-style: none;
+    display: flex;
+    gap: 15px;
+}
+
+header nav ul li a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.85rem;
+    transition: color 0.3s;
+}
+
+header nav ul li a:hover {
+    color: #3498db;
+}
+
+.container {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+section {
+    flex: 6;
+    background-color: #ffffff;
+    padding: 10px;
+    order: 2;
+    overflow-y: auto;
+}
+
+aside {
+    flex: 1;
+    min-width: 210px;
+    max-width: 240px;
+    background-color: #1c3263 !important;
+    color: #ffffff;
+    padding: 15px 10px;
+    order: 1;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+aside h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: gold;
+    margin: 12px 0 6px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 3px;
+    font-weight: bold;
+}
+
+aside h3:first-of-type {
+    margin-top: 0;
+}
+
+aside ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 10px;
+    font-family: "Sans Serif Collection", serif;
+}
+
+aside ul li a {
+    color: #cbd5e1;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(255, 255, 255, 0.01);
+    border-radius: 3px;
+    transition: background-color 0.2s, color 0.2s;
+    font-family: "Comic Sans MS", cursive, sans-serif;
+}
+
+aside ul li a:hover {
+    background-color: #3498db;
+    color: #ffffff;
+}
+
+.icon {
+    font-size: 0.9rem;
+    min-width: 16px;
+    text-align: center;
+}
+
+footer {
+    background-color: #1a252f;
+    color: #ffffff;
+    text-align: center;
+    padding: 10px;
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .container {
+        flex-direction: column;
+    }
+
+    aside {
+        max-width: 100%;
+        max-height: none;
+    }
+}
+
+#Search {
+    width: 5rem;
+    margin: 0;
+    background: #ffffff !important;
+    border: 2px solid #3498db !important;
+    border-radius: 5px;
+    font-family: "Comic Sans MS", cursive, sans-serif;
+}
+
+#main-text {
+    font-family: "Comic Sans MS", cursive, sans-serif;
+}

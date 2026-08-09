@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fleet general management</title>
+    <style>
+        /* Basic reset and styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 1. Header Styling */
+        header {
+            background-color: #2d4b7a;
+            color: #ffffff;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #3498db;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            letter-spacing: 0.03em;
+        }
+
+        /* Navigation Links in Header */
+        header nav ul {
+            list-style: none;
+            display: flex;
+            gap: 15px;
+        }
+
+        header nav ul li a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        header nav ul li a:hover {
+            color: #3498db;
+        }
+
+        /* Container to hold the main content and sidebar side-by-side */
+        .container {
+            display: flex;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        /* 2. Section (Main Content) Styling */
+        section {
+            flex: 6;
+            background-color: #ffffff;
+            padding: 10px;
+            order: 2;
+            overflow-y: auto;
+        }
+
+        /* 3. Aside (Sidebar) Styling - Compact width & single-line items */
+        aside {
+            flex: 1;
+            min-width: 210px;
+            max-width: 240px;
+            background-color: #1c3263 !important;
+            color: #ffffff;
+            padding: 15px 10px;
+            order: 1;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+
+        aside h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: gold;
+            margin: 12px 0 6px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 3px;
+            font-weight: bold;
+        }
+
+        aside h3:first-of-type {
+            margin-top: 0;
+        }
+
+        aside ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-bottom: 10px;
+            font-family: "Sans Serif Collection", serif;
+
+        }
+
+        aside ul li a {
+            color: #cbd5e1;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background-color: rgba(255, 255, 255, 0.01);
+            border-radius: 3px;
+            transition: background-color 0.2s, color 0.2s;
+            font-family: "Comic Sans MS", cursive, sans-serif;
+
+        }
+
+        aside ul li a:hover {
+            background-color: #3498db;
+            color: #ffffff;
+        }
+
+        .icon {
+            font-size: 0.9rem;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        /* 4. Footer Styling */
+        footer {
+            background-color: #1a252f;
+            color: #ffffff;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.8rem;
+        }
+
+        /* Responsive layout for smaller screens */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+
+            .container {
+                flex-direction: column;
+            }
+
+            aside {
+                max-width: 100%;
+                max-height: none;
+            }
+        }
+        #Search{
+            width: 5rem;
+            margin: 0;
+            background: #ffffff !important;
+            border: 2px solid #3498db !important;
+            border-radius: 5px;
+            font-family: "Comic Sans MS", cursive, sans-serif;
+        }
+        #main-text{
+            font-family: "Comic Sans MS", cursive, sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER: Contains website title and navigation links -->
+    <header>
+        <h1>General Operations</h1>
+        <nav>
+            <ul>
+
+                <li><a href="#" onclick="updateContent('Executive Dashboard')">Dashboard</a></li>
+                <li><a href="#" onclick="updateContent('Projects')">Projects</a></li>
+                <li><a href="#" onclick="updateContent('System Audit Logs & Security')">Admin Portal</a></li>
+                <li><input type="text" id="Search" placeholder="Search here"><label for="Search" >- Find</label></li>
+            </ul>
+
+        </nav>
+    </header>
+
+    <!-- Main structural wrapper -->
+    <div class="container">
+
+        <!-- SECTION: Represents the primary content area (dynamically updated) -->
+        <section>
+            <h3 id="main-title">Welcome to Executive Dashboard</h3>
+            <p id="main-text">You are currently viewing the Executive Dashboard section of your oil and gas power unit workshop software. Select any module from the compact sidebar to manage generator fleets, field dispatches, supply chains, or administrative compliance logs.</p>
+        </section>
+
+        <!-- ASIDE: Compact Enterprise Sidebar with Single-Line Icons -->
+        <aside>
+            <h3>1. Exec & Ops</h3>
+            <ul>
+                <li><a href="#" onclick="updateContent('Executive Overview')"><span class="icon">📊</span> Overview</a></li>
+                <li><a href="#" onclick="updateContent('Live GIS Map & Telemetry')"><span class="icon">🗺️</span> GIS Map</a></li>
+                <li><a href="#" onclick="updateContent('Dispatch & Control Center')"><span class="icon">🚨</span> Dispatch</a></li>
+            </ul>
+
+            <h3>2. Fleet Management</h3>
+            <ul>
+                <li><a href="#" onclick="updateContent('Generator Master Registry')"><span class="icon">⚙️</span> Generators</a></li>
+                <li><a href="#" onclick="updateContent('Equipment Telemetry & Diagnostics')"><span class="icon">📈</span> Diagnostics</a></li>
+                <li><a href="#" onclick="updateContent('Well-Site Directory')"><span class="icon">🛢️</span> Well Sites</a></li>
+                <li><a href="#" onclick="updateContent('Decommissioning & Disposal')"><span class="icon">🗑️</span> Disposal</a></li>
+                <li><a href="#" onclick="updateContent('Breakdown $ Trip')"><span class="icon">🚨</span> Trips</a></li>
+            </ul>
+
+            <h3>3. Maintenance</h3>
+            <ul>
+                <li><a href="#" onclick="updateContent('Work Orders (Service & Troubleshooting)')"><span class="icon">🔧</span> Work Orders</a></li>
+                <li><a href="#" onclick="updateContent('Preventive Maintenance (PM) Scheduler')"><span class="icon">📅</span> PM Schedule</a></li>
+                <li><a href="#" onclick="updateContent('Load Bank & Compliance Testing')"><span class="icon">⚡</span> Load Tests</a></li>
+                <li><a href="#" onclick="updateContent('Activity work plan')"><span class="icon">📚</span> Activity Planner</a></li>
+                <li><a href="#" onclick="updateContent('Quality Control & QA/QC Sign-offs')"><span class="icon">✅</span> QA / QC</a></li>
+            </ul>
+
+            <h3>4. Supply Chain</h3>
+            <ul>
+                <li><a href="#" onclick="updateContent('Spare Parts & Warehouse Inventory')"><span class="icon">📦</span> Warehouse</a></li>
+                <li><a href="#" onclick="updateContent('Mobile Service Van Stock')"><span class="icon">🚐</span> Van Stock</a></li>
+                <li><a href="#" onclick="updateContent('Purchase Orders & Procurement')"><span class="icon">🛒</span> Purchase Orders</a></li>
+                <li><a href="#" onclick="updateContent('Tool Calibration & Test Equipment')"><span class="icon">🛠️</span> Tool Calibrations</a></li>
+            </ul>
+
+            <h3>5. Commercial</h3>
+            <ul>
+                <li><a href="#" onclick="updateContent('Client & Contract Management')"><span class="icon">📝</span> Contracts</a></li>
+                <li><a href="#" onclick="updateContent('Service Invoicing & Cost Tracking')"><span class="icon">💰</span> Invoicing</a></li>
+            </ul>
+
+            <h3>6. Analytics & HSE</h3>
+            <ul>
+                <li><a href="#" onclick="updateContent('Reliability & RCM Analytics')"><span class="icon">📉</span> Reliability RCM</a></li>
+                <li><a href="#" onclick="updateContent('Fuel Consumption & Logistics')"><span class="icon">⛽</span> Fuel Logistics</a></li>
+                <li><a href="#" onclick="updateContent('HSE (Health, Safety & Environment)')"><span class="icon">🦺</span> HSE & Safety</a></li>
+            </ul>
+
+            <h3>7. Admin & HR</h3>
+            <ul>
+                <li><a href="#" onclick="updateContent('User Roles & Permissions (RBAC)')"><span class="icon">🔐</span> Roles & Access</a></li>
+                <li><a href="#" onclick="updateContent('Staff Leave Plans')"><span class="icon">🏖️</span> Leave Plans</a></li>
+                <li><a href="#" onclick="updateContent('Residency & Work Permits')"><span class="icon">🛂</span> Resident Cards</a></li>
+                <li><a href="#" onclick="updateContent('Medical Fitness & Health Clearances')"><span class="icon">🏥</span> Medical Fitness</a></li>
+                <li><a href="#" onclick="updateContent('Mandatory Safety Training & Certifications')"><span class="icon">🎓</span> Safety Training</a></li>
+                <li><a href="#" onclick="updateContent('Master Data & System Dictionaries')"><span class="icon">📚</span> Master Data</a></li>
+                <li><a href="#" onclick="updateContent('System Audit Logs & Security')"><span class="icon">🛡️</span> Audit Logs</a></li>
+            </ul>
+        </aside>
+
+    </div>
+
+    <!-- FOOTER: Copyright information -->
+    <footer>
+        <p>&copy; 2026 Oil & Gas Power Unit Management System. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript to handle the dynamic text change -->
+    <script>
+        function updateContent(selectedName) {
+            const titleElement = document.getElementById('main-title');
+            const textElement = document.getElementById('main-text');
+
+            titleElement.innerText = "Welcome to " + selectedName;
+            textElement.innerText = "You are currently viewing the " + selectedName + " module. Use this workspace to review records, manage operational metrics, and execute workshop control tasks tailored for oilfield power generation.";
+        }
+    </script>
+
+</body>
+</html>

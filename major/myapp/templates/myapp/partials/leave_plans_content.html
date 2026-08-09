@@ -1,0 +1,270 @@
+<div class="content-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+    <h2>Admin & HR - Employee Leave Plans</h2>
+    <button class="btn btn-primary" onclick="openAddEmployeeModal()" style="background:#2d4b7a; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+        + Add New Employee
+    </button>
+</div>
+
+<!-- Table with fully independent columns -->
+<div style="overflow-x:auto; background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+    <table id="leaveTable" style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">
+        <thead>
+            <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1; color:#334155;">
+                <th style="padding:10px;">Photo</th>
+                <th style="padding:10px;">Employee Name</th>
+                <th style="padding:10px;">Nationality</th>
+                <th style="padding:10px;">Civil ID</th>
+                <th style="padding:10px;">Oracle ID</th>
+                <th style="padding:10px;">Designation</th>
+                <th style="padding:10px;">Project</th>
+                <th style="padding:10px;">Department</th>
+                <th style="padding:10px;">Civil ID Exp.</th>
+                <th style="padding:10px;">Passport Exp.</th>
+                <th style="padding:10px;">Planned Leave</th>
+                <th style="padding:10px;">Days Remaining</th>
+                <th style="padding:10px;">Service (Yrs)</th>
+                <th style="padding:10px; text-align:center;">Edit</th>
+                <th style="padding:10px; text-align:center;">Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in leave_plans %}
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:10px;">
+                    {% if item.photo %}
+                        <img src="{{ item.photo.url }}" alt="" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                    {% else %}
+                        <span style="color:#94a3b8; font-size:0.75rem;">No Image</span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px;"><strong>{{ item.employee_name }}</strong></td>
+                <td style="padding:10px;">{{ item.nationality|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.civil_id_no|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.oracle_id|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.designation|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.project|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.department|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.civil_id_expire_date|date:"Y-m-d"|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.passport_expire_date|date:"Y-m-d"|default:"N/A" }}</td>
+                <td style="padding:10px;">{{ item.planned_leave_date|date:"Y-m-d"|default:"N/A" }}</td>
+                <td style="padding:10px;">
+                    <span style="padding:3px 8px; border-radius:12px; font-weight:bold; font-size:0.75rem; background:#dcfce7; color:#166534;">
+                        {{ item.days_remaining|default:"0" }} Days
+                    </span>
+                </td>
+                <td style="padding:10px;">{{ item.service_years|default:"0" }}</td>
+                <td style="padding:10px; text-align:center; vertical-align:middle;">
+                    <button type="button"
+                        onclick="openEditModalFromData(this)"
+                        data-employee='{"id": "{{ item.id }}", "employee_name": "{{ item.employee_name|escapejs }}", "employee_id": "{{ item.employee_id|default:''|escapejs }}", "oracle_id": "{{ item.oracle_id|default:''|escapejs }}", "designation": "{{ item.designation|default:''|escapejs }}", "nationality": "{{ item.nationality|default:''|escapejs }}", "company_mobile_no": "{{ item.company_mobile_no|default:''|escapejs }}", "project": "{{ item.project|default:''|escapejs }}", "department": "{{ item.department|default:''|escapejs }}", "joining_date": "{{ item.joining_date|date:'Y-m-d'|default:'' }}", "civil_id_no": "{{ item.civil_id_no|default:''|escapejs }}", "civil_id_expire_date": "{{ item.civil_id_expire_date|date:'Y-m-d'|default:'' }}", "passport_no": "{{ item.passport_no|default:''|escapejs }}", "passport_expire_date": "{{ item.passport_expire_date|date:'Y-m-d'|default:'' }}", "planned_leave_date": "{{ item.planned_leave_date|date:'Y-m-d'|default:'' }}"}'
+                        style="background:#0284c7; color:#ffffff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">
+                        ✏️ Edit
+                    </button>
+                </td>
+                <td style="padding:10px; text-align:center; vertical-align:middle;">
+                    <button type="button"
+                        onclick="deleteEmployee('{{ item.id }}', '{{ item.employee_name|escapejs }}')"
+                        style="background:#ef4444; color:#ffffff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">
+                        🗑️ Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="15" style="text-align:center; padding:20px; color:#64748b;">No employee leave plan records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Employee Modal Popup (Add & Edit) -->
+<div id="addEmployeeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:#fff; width:90%; max-width:700px; max-height:90vh; overflow-y:auto; padding:20px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:15px;">
+            <h3 id="modalTitle" style="margin:0;">Add New Employee Record</h3>
+            <button onclick="closeAddEmployeeModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="addEmployeeForm" enctype="multipart/form-data" onsubmit="submitEmployeeForm(event)">
+            {% csrf_token %}
+            <input type="hidden" id="employee_pk" name="pk" value="">
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Employee Name *</label>
+                    <input type="text" id="id_employee_name" name="employee_name" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Employee Photo</label>
+                    <input type="file" name="photo" accept="image/*" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Employee ID *</label>
+                    <input type="text" id="id_employee_id" name="employee_id" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Oracle ID</label>
+                    <input type="text" id="id_oracle_id" name="oracle_id" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Designation *</label>
+                    <input type="text" id="id_designation" name="designation" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Nationality</label>
+                    <input type="text" id="id_nationality" name="nationality" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Company Mobile No.</label>
+                    <input type="text" id="id_company_mobile_no" name="company_mobile_no" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Project *</label>
+                    <select id="id_project" name="project" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="GENSET_WORKSHOP">Genset Workshop</option>
+                        <option value="GENSET_FIELD">Genset Field</option>
+                        <option value="WAFULA">Wafula</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Department *</label>
+                    <select id="id_department" name="department" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="GENSET_WORKSHOP">Genset Workshop</option>
+                        <option value="GENSET_FIELD">Genset Field</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Joining Date (Employment) *</label>
+                    <input type="date" id="id_joining_date" name="joining_date" required style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Civil ID No.</label>
+                    <input type="text" id="id_civil_id_no" name="civil_id_no" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Civil ID Expire Date</label>
+                    <input type="date" id="id_civil_id_expire_date" name="civil_id_expire_date" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Passport No.</label>
+                    <input type="text" id="id_passport_no" name="passport_no" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:bold;">Passport Expire Date</label>
+                    <input type="date" id="id_passport_expire_date" name="passport_expire_date" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.8rem; font-weight:bold;">Planned Leave Date</label>
+                    <input type="date" id="id_planned_leave_date" name="planned_leave_date" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+            </div>
+
+            <div style="margin-top:20px; text-align:right; border-top:1px solid #e2e8f0; padding-top:12px;">
+                <button type="button" onclick="closeAddEmployeeModal()" style="padding:8px 16px; margin-right:8px; border:1px solid #ccc; background:#f8fafc; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button type="submit" style="padding:8px 16px; background:#2d4b7a; color:#fff; border:none; border-radius:4px; cursor:pointer;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let submitTargetUrl = "{% url 'add_employee_leave' %}";
+
+function openAddEmployeeModal() {
+    document.getElementById('modalTitle').innerText = 'Add New Employee Record';
+    document.getElementById('addEmployeeForm').reset();
+    document.getElementById('employee_pk').value = '';
+    submitTargetUrl = "{% url 'add_employee_leave' %}";
+    document.getElementById('addEmployeeModal').style.display = 'flex';
+}
+
+function openEditModalFromData(btn) {
+    try {
+        const emp = JSON.parse(btn.getAttribute('data-employee'));
+
+        document.getElementById('modalTitle').innerText = 'Edit Employee Record';
+        document.getElementById('employee_pk').value = emp.id;
+
+        document.getElementById('id_employee_name').value = emp.employee_name || '';
+        document.getElementById('id_employee_id').value = emp.employee_id || '';
+        document.getElementById('id_oracle_id').value = emp.oracle_id || '';
+        document.getElementById('id_designation').value = emp.designation || '';
+        document.getElementById('id_nationality').value = emp.nationality || '';
+        document.getElementById('id_company_mobile_no').value = emp.company_mobile_no || '';
+        document.getElementById('id_project').value = emp.project || '';
+        document.getElementById('id_department').value = emp.department || '';
+        document.getElementById('id_joining_date').value = emp.joining_date || '';
+        document.getElementById('id_civil_id_no').value = emp.civil_id_no || '';
+        document.getElementById('id_civil_id_expire_date').value = emp.civil_id_expire_date || '';
+        document.getElementById('id_passport_no').value = emp.passport_no || '';
+        document.getElementById('id_passport_expire_date').value = emp.passport_expire_date || '';
+        document.getElementById('id_planned_leave_date').value = emp.planned_leave_date || '';
+
+        submitTargetUrl = `/leave-plans/edit/${emp.id}/`;
+        document.getElementById('addEmployeeModal').style.display = 'flex';
+    } catch (err) {
+        console.error("Failed to parse employee data:", err);
+    }
+}
+
+function closeAddEmployeeModal() {
+    document.getElementById('addEmployeeModal').style.display = 'none';
+}
+
+function submitEmployeeForm(e) {
+    e.preventDefault();
+    const form = document.getElementById('addEmployeeForm');
+    const formData = new FormData(form);
+
+    fetch(submitTargetUrl, {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeAddEmployeeModal();
+            if (typeof loadTab === 'function') {
+                loadTab('/leave-plans/');
+            } else {
+                location.reload();
+            }
+        } else {
+            alert("Error: " + JSON.stringify(data.errors));
+        }
+    })
+    .catch(err => console.error("Error submitting form:", err));
+}
+
+function deleteEmployee(pk, name) {
+    if (confirm(`Are you sure you want to delete ${name}?`)) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch(`/leave-plans/delete/${pk}/`, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (typeof loadTab === 'function') {
+                    loadTab('/leave-plans/');
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert("Error deleting record.");
+            }
+        })
+        .catch(err => console.error("Error deleting employee:", err));
+    }
+}
+</script>

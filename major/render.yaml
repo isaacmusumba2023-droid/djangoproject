@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: major
+    runtime: python
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn major.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        value: "postgresql://postgres:[YOUR-PASSWORD]@db.parltapakvpagrjdjzur.supabase.co:5432/postgres"
+      - key: SECRET_KEY
+        generateValue: true
