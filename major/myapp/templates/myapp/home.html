@@ -235,6 +235,8 @@
                 {% include 'myapp/partials/resident_cards_content.html'%}
             {% elif active_module == 'work_orders'%}
                 {% include 'myapp/partials/work_orders_content.html'%}
+            {% elif active_module == 'diagnostics' %}
+                {% include 'myapp/partials/diagnostics_content.html' %}
             {% else %}
                 <div class="generic-module-card">
                     <h2>{{ title }}</h2>

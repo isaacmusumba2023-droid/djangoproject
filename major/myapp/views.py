@@ -817,7 +817,7 @@ def log_pm_service(request, generator_id):
     return redirect('pm_schedule')
 #============================================================================================================
 from django.shortcuts import render, redirect
-from .models import GeneratorDiagnostics
+from .models import GeneratorDiagnostics, GeneratorAsset
 from .forms import GeneratorDiagnosticsForm
 
 
@@ -830,9 +830,11 @@ def diagnostics_view(request):
             return redirect('diagnostics')
     else:
         form = GeneratorDiagnosticsForm()
+        # Ensure the form's generator field pulls all registered assets
+        form.fields['generator'].queryset = GeneratorAsset.objects.all()
 
     context = {
         'logs': logs,
         'form': form,
     }
-    return render(request, 'myapp/diagnostics.html', context)
+    return render(request, 'myapp/partials/diagnostics_content.html', context)

@@ -38,9 +38,22 @@ class ResidentCardForm(forms.ModelForm):
 #=================================================================================================================
 # Inside major/myapp/forms.py
 from django import forms
-from .models import GeneratorDiagnostics, GeneratorAsset  # <-- Import GeneratorAsset here
+from .models import GeneratorDiagnostics, GeneratorAsset
+
 
 class GeneratorDiagnosticsForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Automatically pull all registered generator assets into the dropdown
+        self.fields['generator'].queryset = GeneratorAsset.objects.all()
+
+        # Automatically apply Bootstrap classes to every field for clean styling
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.update({'class': 'form-check-input'})
+            else:
+                field.widget.attrs.update({'class': 'form-control'})
+
     class Meta:
         model = GeneratorDiagnostics
         fields = [
