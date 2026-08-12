@@ -256,3 +256,73 @@ class WorkOrderReconciliation(models.Model):
 
     def __str__(self):
         return f"{self.crm_wo_number} | Book SN: {self.service_book_serial_no or 'N/A'}"
+
+
+from django.db import models
+
+class GeneratorAsset(models.Model):
+    pass
+class GeneratorDiagnostics(models.Model):
+    SEVERITY_CHOICES = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High'),
+        ('CRITICAL', 'Critical'),
+    ]
+
+    WARNING_STATUS_CHOICES = [
+        ('NORMAL', 'Normal'),
+        ('WARNING', 'Warning (Action Required)'),
+        ('CRITICAL', 'Critical (Trip Imminent)'),
+    ]
+
+    # Links to both existing and future generator assets
+    generator = models.ForeignKey('GeneratorAsset', on_delete=models.CASCADE, related_name='diagnostics_logs')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    # 1. Remote Start/Stop & Operational Status
+    is_running = models.BooleanField(default=False)
+    last_command = models.CharField(max_length=50, default='Idle')  # e.g., 'Remote Start', 'Emergency Stop'
+    command_initiated_by = models.CharField(max_length=100, blank=True, null=True)
+
+    # 2. Telemetry & Sensor Snapshots
+    oil_pressure = models.FloatField(help_text="Bar or PSI", blank=True, null=True)
+    coolant_temp = models.FloatField(help_text="in °C", blank=True, null=True)
+    battery_voltage = models.FloatField(help_text="in Volts", blank=True, null=True)
+    fuel_level = models.FloatField(help_text="Percentage %", blank=True, null=True)
+
+    # 3. Early Warning & Trip Prevention System
+    warning_status = models.CharField(max_length=20, choices=WARNING_STATUS_CHOICES, default='NORMAL')
+    warning_message = models.TextField(blank=True, null=True)
+
+    # 4. Fault Code & Error Tracking
+    fault_code = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='LOW')
+
+    # 5. Diagnostic Trouble Reports (DTR) & Recommendations
+    symptoms = models.TextField(blank=True, null=True)
+    root_cause = models.TextField(blank=True, null=True)
+    corrective_action = models.TextField(blank=True, null=True)
+    technician = models.CharField(max_length=100, blank=True, null=True)
+    resolved = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        # Automated Early Warning Logic Check based on thresholds
+        if self.coolant_temp and self.coolant_temp >= 105:
+            self.warning_status = 'CRITICAL'
+            self.warning_message = 'CRITICAL: Coolant temperature exceeds 105°C. Trip imminent!'
+        elif self.coolant_temp and self.coolant_temp >= 95:
+            self.warning_status = 'WARNING'
+            self.warning_message = 'WARNING: Coolant temperature is rising (>= 95°C).'
+        elif self.oil_pressure and self.oil_pressure <= 1.5:
+            self.warning_status = 'WARNING'
+            self.warning_message = 'WARNING: Low oil pressure detected.'
+        else:
+            self.warning_status = 'NORMAL'
+            self.warning_message = 'All parameters operating within normal thresholds.'
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.generator} - Status: {self.warning_status} ({self.timestamp.strftime('%Y-%m-%d %H:%M')})"

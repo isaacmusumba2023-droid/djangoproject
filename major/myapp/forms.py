@@ -34,3 +34,24 @@ class ResidentCardForm(forms.ModelForm):
             'expire_date': forms.DateInput(attrs={'type': 'date'}),
             'renewal_notes': forms.Textarea(attrs={'rows': 2}),
         }
+
+#=================================================================================================================
+# Inside major/myapp/forms.py
+from django import forms
+from .models import GeneratorDiagnostics, GeneratorAsset  # <-- Import GeneratorAsset here
+
+class GeneratorDiagnosticsForm(forms.ModelForm):
+    class Meta:
+        model = GeneratorDiagnostics
+        fields = [
+            'generator', 'is_running', 'last_command',
+            'oil_pressure', 'coolant_temp', 'battery_voltage', 'fuel_level',
+            'fault_code', 'description', 'severity',
+            'symptoms', 'root_cause', 'corrective_action', 'technician', 'resolved'
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 2}),
+            'symptoms': forms.Textarea(attrs={'rows': 2}),
+            'root_cause': forms.Textarea(attrs={'rows': 2}),
+            'corrective_action': forms.Textarea(attrs={'rows': 2}),
+        }
