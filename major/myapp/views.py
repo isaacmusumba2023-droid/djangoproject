@@ -815,3 +815,24 @@ def log_pm_service(request, generator_id):
         messages.success(request, f"PM Service logged for {generator.g_code}.")
 
     return redirect('pm_schedule')
+#============================================================================================================
+from django.shortcuts import render, redirect
+from .models import GeneratorDiagnostics
+from .forms import GeneratorDiagnosticsForm
+
+
+def diagnostics_view(request):
+    logs = GeneratorDiagnostics.objects.all().order_by('-timestamp')
+    if request.method == 'POST':
+        form = GeneratorDiagnosticsForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('diagnostics')
+    else:
+        form = GeneratorDiagnosticsForm()
+
+    context = {
+        'logs': logs,
+        'form': form,
+    }
+    return render(request, 'myapp/diagnostics.html', context)

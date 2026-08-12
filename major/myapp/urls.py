@@ -14,7 +14,7 @@ urlpatterns = [
 
     # Fleet Management
     path('generators/', views.generators, name='generators'),
-    path('diagnostics/', views.diagnostics, name='diagnostics'),
+    path('diagnostics/', views.diagnostics_view, name='diagnostics'),
     path('well-sites/', views.well_sites, name='well_sites'),
     path('disposal/', views.disposal, name='disposal'),
     path('trips/', views.trips, name='trips'),
